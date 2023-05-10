@@ -21,7 +21,7 @@ apqa currently supports two strategies:
 * Top-k Beam-Search (CQD)
 * Threshold
 
-All remaining facts are stored in a Probablistic Database (PDB). Such that the queries can be answered by means of a Datalog Engine (e.g. Glog).
+All remaining facts are stored in a Probablistic Database (PDB). Such that the queries can be answered by means of a Datalog Engine (e.g. Glog). A common strategy to rank the answers is Weighted Model Counting (WMC).
 
 ## Getting Started
 
