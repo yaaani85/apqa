@@ -43,7 +43,7 @@ ex. Yannick Brunink
 
 ## License
 
-This project is licensed under the [NAME HERE] License - see the LICENSE.md file for details
+TODO
 
 ## Acknowledgments
 
