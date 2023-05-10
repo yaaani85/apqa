@@ -1,4 +1,4 @@
-# Approximate Proababilistic Query Answering
+# Approximate Probabilistic Query Answering
 Probablistic Reasoning over large (uncertain) Knowledge Graphs
 
 
