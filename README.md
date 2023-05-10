@@ -11,7 +11,7 @@ Probablistic Reasoning over large (uncertain) Knowledge Graphs
 
 ## Description
 
-Knowledge Graphs are often incomplete. By creating a Knowledge Graphs Embedding (KGE), one can assign a score [0, 1] to every possible triplet <s, r, o>. 
+Knowledge Graphs are often incomplete. By creating a Knowledge Graphs Embedding (KGE), one can assign a score [0, 1] to every possible triplet <s, r, o> with a neural link predictor (NLP) such as Complex.
 The Knowledge Graph is now extended with uncertain facts. Hence, incompletness results in uncertaintity. 
 Reasoning over all uncertain facts is not feasiable, hence a form of approximation is required. 
 
