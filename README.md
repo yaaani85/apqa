@@ -1,5 +1,5 @@
 # Approximate Probabilistic Query Answering
-Probablistic Reasoning over large (uncertain) Knowledge Graphs
+Probablistic Reasoning over large (incomplete) Knowledge Graphs
 
 
 ## Research Ideas
