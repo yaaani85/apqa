@@ -5,7 +5,7 @@ from kge.model import KgeModel
 from kge.util.io import load_checkpoint
 from embtopk.embtopktable import EmbTopKEDBTable
 from wmc import WMC
-from utils import  get_terms_from_body, parse_program
+from utils import  get_terms_from_body, parse_program, get_query_id_form_query
 import logging
 import torch
 import os
@@ -16,11 +16,13 @@ class Query():
     def __init__(self, datalog_file, query_type):
         try:
             # to parser
-            self._datalog_program, query, rule_1, rule_2, rule_3 = parse_program(datalog_file)
-            self._predicates_in_query_body, self._subjects_in_query_body = get_terms_from_body(query)
-            self._predicates_in_rule_1_body, self._subjects_in_rule_1_body = get_terms_from_body(rule_1)
-            self._predicates_in_rule_2_body, self._subjects_in_rule_1_body = get_terms_from_body(rule_2)
-            self._predicates_in_rule_3_body, self._subjects_in_rule_1_body = get_terms_from_body(rule_3)
+            self._query_type = query_type
+            self._datalog_program, query, rule_1, rule_2, rule_3 = parse_program(datalog_file, query_type)
+            self._qid = get_query_id_form_query(query)
+            self._predicates_in_query, self._subjects_in_query = get_terms_from_body(query)
+            self._predicates_in_rule_1, self._subjects_in_rule_1 = get_terms_from_body(rule_1)
+            self._predicates_in_rule_2, self._subjects_in_rule_1 = get_terms_from_body(rule_2)
+            self._predicates_in_rule_3, self._subjects_in_rule_1 = get_terms_from_body(rule_3)
 
         except Exception as e:
             raise ValueError(f"Incorrect Datalog rule or query type format, error: {e}")
@@ -39,14 +41,14 @@ class Query():
 
     @property
     def first_predicate_query(self):
-        return self._predicates_in_body[0]
+        return self._predicates_in_query[0]
     
     @property
     def second_predicate_query(self):
-        return self._predicates_in_body[1]
+        return self._predicates_in_query[1]
     @property
     def third_predicate_query(self):
-        return self._predicates_in_body[2]
+        return self._predicates_in_query[2]
     
     @property
     def second_predicate_rule_1(self):
@@ -66,20 +68,20 @@ class Query():
         return self._predicates_in_rule_3[0]
 
     @property
-    def first_constant_query(self):
-        return self._constants_in_body[0]
+    def first_subject_query(self):
+        return self._subjects_in_query[0]
 
     @property
-    def first_constant_rule_1(self):
-        return self._constants_in_rule_1[0]
+    def first_subject_rule_1(self):
+        return self._subjects_in_rule_1[0]
     
     @property
-    def first_constant_rule_2(self):
-        return self._constants_in_rule_2[0]
+    def first_subject_rule_2(self):
+        return self._subjects_in_rule_2[0]
 
     @property
-    def first_constant_rule_3(self):
-        return self._constants_in_rule_3[0]
+    def first_subject_rule_3(self):
+        return self._subejcts_in_rule_3[0]
 
 
 
@@ -181,7 +183,7 @@ class ApproximateProbabilisticQueryAnswerer():
     
     """
 
-    def __init__(self, embedding_model_path, edb_config_path, k, dataset, log_level):
+    def __init__(self, embedding_model_path, edb_config_path, k, dataset):
         self._edb = glog.EDBLayer(edb_config_path)
         self._program = glog.Program(self._edb)
         self._rules = []
@@ -305,15 +307,15 @@ class ApproximateProbabilisticQueryAnswerer():
         
     def _handle_2p(self, query):
 
-        self._handle_conjunction(query.first_predicate_query, query.first_constant_query, query.second_predicate_query)
+        self._handle_conjunction(query.first_predicate_query, query.first_subject_query, query.second_predicate_query)
         return query
 
     def _handle_3p(self, query):
-        self._add_top_k_source(query.first_predicate_query, query.first_constant_query)
-        intermediate_variable_assignments = self._collect_top_k_intermediate_variable_assignments(query.first_predicate_query, query.first_constant_query)
+        self._add_top_k_source(query.first_predicate_query, query.first_subject_query)
+        intermediate_variable_assignments = self._collect_top_k_intermediate_variable_assignments(query.first_predicate_query, query.first_subject_query)
         for possible_assignment in intermediate_variable_assignments:
             self._add_top_k_source(query.second_predicate_query, possible_assignment)
-            intermediate_variable_assignments_2 = self._collect_top_k_intermediate_variable_assignments(query.first_predicate_query, query.first_constant_query)
+            intermediate_variable_assignments_2 = self._collect_top_k_intermediate_variable_assignments(query.first_predicate_query, query.first_subject_query)
             for possible_assignment in intermediate_variable_assignments_2:
                 self._add_top_k_source(query.third_predicate_query, possible_assignment)
 
@@ -321,19 +323,19 @@ class ApproximateProbabilisticQueryAnswerer():
 
 
     def _handle_2i(self, query):
-        self._handle_atom(query.first_predicate_rule_1, query.first_constant_rule_1)
-        self._handle_atom(query.first_predicate_rule_2, query.first_constant_rule_2)
+        self._handle_atom(query.first_predicate_rule_1, query.first_subject_rule_1)
+        self._handle_atom(query.first_predicate_rule_2, query.first_subject_rule_2)
         return query
 
     def _handle_3i(self, query):
-        self._handle_atom(query.first_predicate_rule_1, query.first_constant_rule_1)
-        self._handle_atom(query.first_predicate_rule_2, query.first_constant_rule_2)
-        self._handle_atom(query.first_predicate_rule_3, query.first_constant_rule_3)
+        self._handle_atom(query.first_predicate_rule_1, query.first_subject_rule_1)
+        self._handle_atom(query.first_predicate_rule_2, query.first_subject_rule_2)
+        self._handle_atom(query.first_predicate_rule_3, query.first_subject_rule_3)
         return query
     
     def _handle_ci(self, query):
-        self._handle_conjunction(query.first_predicate_rule_1, query.first_constant_rule_1, query.second_predicate_rule_1)
-        self._handle_atom(query.first_predicate_rule_2, query.first_constant_rule_2)
+        self._handle_conjunction(query.first_predicate_rule_1, query.first_subject_rule_1, query.second_predicate_rule_1)
+        self._handle_atom(query.first_predicate_rule_2, query.first_subject_rule_2)
         return query
         
     def _handle_ic(self, query):
