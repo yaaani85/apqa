@@ -5,32 +5,23 @@ import logging
 
 
 
-def evaluation(scores,dataset):
+def evaluation(scores, answers):
     '''This function is written by Daniel Daza (CQD) '''
-
+    queries, answers, answers_hard = answers
 
     scores = torch.transpose(scores,0,1)
     nentity = len(scores[0])
     step = 0
     logs = []
 
-    temp = {7:0, 9:1, 12:2, 14:3, 20:4, 21:5, 27:6, 28:7, 32:8}
     
-    for query_id, query in enumerate(tqdm(dataset.queries)):
-        
-        if query_id not in [7, 9, 12, 14, 20, 21, 27, 28, 32]:
-            continue
-        
+    for query_id, query in enumerate(tqdm(queries)):
+    
 
-        if query_id == 10:
-            return metrics
-
-
-
-        score = scores[temp[query_id]]
+        score = scores[query_id]
         score -= (torch.min(score) - 1)
-        ans = dataset.answers[query]
-        hard_ans = dataset.answers_hard[query]
+        ans = answers[query]
+        hard_ans = answers_hard[query]
         all_idx = set(range(nentity))
 
         false_ans = all_idx - set(ans)

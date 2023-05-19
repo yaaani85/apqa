@@ -40,7 +40,8 @@ class WMC():
                     for i, t_disjunct in enumerate(lineage):
                         conjunction = None
                         for conjunct in t_disjunct:
-                            if conjunct.size < 1:
+
+                            if len(conjunct) < 1:
                                 continue
                             try:
                                 literal = tupleToLiteral[tuple(conjunct)]

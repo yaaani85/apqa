@@ -13,6 +13,7 @@ class LearningSetting(object):
         self.embedding_model_path = parser.get('EMBEDDING_MODEL', 'embedding_model_path')
         self.edb_config_path = parser.get('EDB', 'edb_config_path')
         self.top_k = parser.get("TOPK", 'top_k')
+        self.rank = parser.get("RANK", 'rank')
 
 
 

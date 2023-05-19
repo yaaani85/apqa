@@ -1,75 +1,87 @@
 import glog
 import json
-from python.parser import Parser
+from rule_parser import RuleParser
 from kge.model import KgeModel
 from kge.util.io import load_checkpoint
-from python.embtopk.embtopktable import EmbTopKEDBTable
+from embtopk.embtopktable import EmbTopKEDBTable
 from wmc import WMC
+from utils import  get_terms_from_body, parse_program
 import logging
 import torch
-
+import os
+from tqdm import tqdm
 class Query():
-    """Parsed query"""
-
-    def __init__(self, query_datalog, query_type):
+    """Abstract representation of the (datalog) Queries specific to CQD/QTO (Hamilton)"""
+    #TODO REWRITE THIS CLASS
+    def __init__(self, datalog_file, query_type):
         try:
-            self._datalog= query_datalog
-            self._query_type = query_type
-            self._query_head, self._query_body = self.parse_query(query_datalog)
-            self._qid = str(self._query_head[0].get_predicate_name())
-            self._predicates_in_body = [predicate for (_, predicate, _) in self._query_body]
-            self._constants_in_body =  [subject for (subject, _, _) in self._query_body]
+            # to parser
+            self._datalog_program, query, rule_1, rule_2, rule_3 = parse_program(datalog_file)
+            self._predicates_in_query_body, self._subjects_in_query_body = get_terms_from_body(query)
+            self._predicates_in_rule_1_body, self._subjects_in_rule_1_body = get_terms_from_body(rule_1)
+            self._predicates_in_rule_2_body, self._subjects_in_rule_1_body = get_terms_from_body(rule_2)
+            self._predicates_in_rule_3_body, self._subjects_in_rule_1_body = get_terms_from_body(rule_3)
 
         except Exception as e:
             raise ValueError(f"Incorrect Datalog rule or query type format, error: {e}")
         
-
     @property
-    def datalog(self):
-        return self._datalog
+    def datalog_program(self):
+        return self._datalog_program
     
     @property
     def type(self):
         return self._query_type
 
     @property
-    def head(self):
-        return self._query_body
-    
-    @property
-    def body(self):
-        return self._query_head
-    
-    @property
     def qid(self):
         return self._qid
-    
-    @qid.setter
-    def qid(self, qid):
-        self._qid = qid
 
     @property
-    def first_predicate(self):
+    def first_predicate_query(self):
         return self._predicates_in_body[0]
     
     @property
-    def second_predicate(self):
+    def second_predicate_query(self):
         return self._predicates_in_body[1]
+    @property
+    def third_predicate_query(self):
+        return self._predicates_in_body[2]
+    
+    @property
+    def second_predicate_rule_1(self):
+        return self._predicates_in_rule_1[1]
+
+    
+    @property
+    def first_predicate_rule_1(self):
+        return self._predicates_in_rule_1[0]
+    
+    @property
+    def first_predicate_rule_2(self):
+        return self._predicates_in_rule_2[0]
+        
+    @property
+    def first_predicate_rule_3(self):
+        return self._predicates_in_rule_3[0]
 
     @property
-    def first_constant(self):
+    def first_constant_query(self):
         return self._constants_in_body[0]
 
+    @property
+    def first_constant_rule_1(self):
+        return self._constants_in_rule_1[0]
+    
+    @property
+    def first_constant_rule_2(self):
+        return self._constants_in_rule_2[0]
 
-    def parse_query(self, datalog_query):
-        parser = Parser()
-        parsed_rule = parser.parse_rule(datalog_query)
-        parsed_rule_head = parsed_rule.get_head()
-        rule_body = parsed_rule.get_body()
-        parsed_rule_body = [tuple(literal.get_terms()) for literal in rule_body]
+    @property
+    def first_constant_rule_3(self):
+        return self._constants_in_rule_3[0]
 
-        return parsed_rule_head, parsed_rule_body
-   
+
 
 class Engine():
     """Wraps a glog-engine for KGE tasks"""
@@ -115,6 +127,7 @@ class Engine():
             for fact in facts:
                 try:
                     name, prob = fact
+                    print(prob)
                     results.append(name)                     
                 except ValueError:
                     results.append(fact)
@@ -129,12 +142,14 @@ class Engine():
 
         answers = {}
         variables_per_answer = {}
-
+        nodes = self._querier.get_node_details_predicate(query.qid)
+        if nodes == "{}":
+            return query.qid, ({}, {}), {}
+        
         tuples = self._querier.get_facts_coordinates_with_predicate(query.qid)
         for current_answer, coordinates in tuples:
             current_answer = self._decode_term(current_answer[0])
             node, factid = coordinates
-            
             leaves = self._querier.get_leaves(node, factid)
             
             answers[current_answer] = list()
@@ -166,7 +181,7 @@ class ApproximateProbabilisticQueryAnswerer():
     
     """
 
-    def __init__(self, embedding_model_path, edb_config_path, k, dataset):
+    def __init__(self, embedding_model_path, edb_config_path, k, dataset, log_level):
         self._edb = glog.EDBLayer(edb_config_path)
         self._program = glog.Program(self._edb)
         self._rules = []
@@ -204,23 +219,25 @@ class ApproximateProbabilisticQueryAnswerer():
 
 
 
-    def answer_queries(self):
+    def answer_queries(self, query_type):
         solver = WMC()
         results = {}
         query_scores = torch.zeros(self.dataset.num_entities)
         final_scores = None
-        for datalog_query, query_type in self.dataset.datalog_queries:
-       
+
+        os.chdir(self.dataset.datalog_queries_path)
+
+        for query_id in tqdm(os.listdir(query_type)):
+            query_path = self.dataset.get_query_path(query_type, query_id)
+           
             try:
-                qid, answers, probabilities = self._answer_query(datalog_query, query_type)
+                qid, answers, probabilities = self._answer_query(query_path, query_type)
                 qid = qid.replace("Q", "")
                 wmc = solver.solve(answers, probabilities)
                 results[qid] = wmc
-                print("WMC", wmc)
                 entity_indexes = [self.dataset.entities_to_index[entity.strip("<>")] for entity in wmc.keys()]
                 query_scores[entity_indexes] = torch.Tensor(list(wmc.values()))
                 final_scores = query_scores if final_scores is None else torch.column_stack([final_scores,query_scores])
-
 
             except Exception as e:
                 logging.error(e)
@@ -230,100 +247,114 @@ class ApproximateProbabilisticQueryAnswerer():
         return final_scores
         
     
-    def _answer_query(self, datalog_query, query_type):
-        query = Query(datalog_query, query_type)
+    def _answer_query(self, datalog_file, query_type):
+        query = Query(datalog_file, query_type)
+        
         processed_query = self._preprocess(query)
         self.program = self.edb
         self._add_deterministic_facts_to_knowledge_base()
         self._add_probabilistic_facts_to_knowledge_base()
 
-
-        self.program.add_rule(query.datalog)
+        for rule in query.datalog_program:
+            self.program.add_rule(rule.strip("\n"))
         engine = Engine(self.edb, self.program)
-
         return engine.get_lineage(processed_query)
     
 
 
     def _preprocess(self, query):
-        if query.type == "1p":
-            return self._handle_1p(query)
+      
         
-        elif query.type == "2p":
+        if query.type == "1_2":
             return self._handle_2p(query)
 
-        elif query.type == "3p":
-            return self.handle_3p(query)
+        elif query.type == "1_3":
+            return self._handle_3p(query)
 
-        elif query.type == "2i":
-            return self.handle_2i(query)
+        elif query.type == "2_2":
+            return self._handle_2i(query)
         
-        elif query.type == "3i":
-            return self.handle_3i(query)
+        elif query.type == "3_3":
+            return self._handle_ci(query)
     
-        elif query.type == "ip":
-            return self.handle_ip(query)
+        elif query.type == "2_3":
+            return self._handle_3i(query)
     
-        elif query.type == "pi":
-            return self.handle_pi(query)
+        elif query.type == "4_3":
+            return self._handle_ic(query)
         
-        elif query.type == "2u":
-            return self.handle_2u(query)
+        elif query.type == "2_2_disj":
+            return self._handle_2u(query)
     
-        elif query.type == "up":
-            return self.handle_up(query)
+        elif query.type == "4_3_disj":
+            return self._handle_up(query)
         else:
-            raise Exception("Query type {query.type} not supported!")
+            raise Exception(f"Query type {query.type} not supported!")
 
 
-    def _handle_1p(self, query):
-        self._add_top_k_source(query.first_predicate, query.first_constant)
-        return query
+    def _handle_atom(self, first_predicate, first_constant):
+        self._add_top_k_source(first_predicate, first_constant)
     
-    def _handle_2p(self, query):
-        self._add_top_k_source(query.first_predicate, query.first_constant)
-        intermediate_variable_assignments = self._collect_top_k_intermediate_variable_assignments(query.first_predicate, query.first_constant)
+
+    def _handle_conjunction(self, first_predicate, first_constant, second_predicate):
+        self._add_top_k_source(first_predicate, first_constant)
+        intermediate_variable_assignments = self._collect_top_k_intermediate_variable_assignments(first_predicate, first_constant)
         for possible_assignment in intermediate_variable_assignments:
-            self._add_top_k_source(query.second_predicate, possible_assignment)
+            self._add_top_k_source(second_predicate, possible_assignment)
         
+        
+    def _handle_2p(self, query):
+
+        self._handle_conjunction(query.first_predicate_query, query.first_constant_query, query.second_predicate_query)
         return query
 
     def _handle_3p(self, query):
-        raise NotImplementedError()
+        self._add_top_k_source(query.first_predicate_query, query.first_constant_query)
+        intermediate_variable_assignments = self._collect_top_k_intermediate_variable_assignments(query.first_predicate_query, query.first_constant_query)
+        for possible_assignment in intermediate_variable_assignments:
+            self._add_top_k_source(query.second_predicate_query, possible_assignment)
+            intermediate_variable_assignments_2 = self._collect_top_k_intermediate_variable_assignments(query.first_predicate_query, query.first_constant_query)
+            for possible_assignment in intermediate_variable_assignments_2:
+                self._add_top_k_source(query.third_predicate_query, possible_assignment)
+
+        return query
+
 
     def _handle_2i(self, query):
-        raise NotImplementedError()
-
+        self._handle_atom(query.first_predicate_rule_1, query.first_constant_rule_1)
+        self._handle_atom(query.first_predicate_rule_2, query.first_constant_rule_2)
+        return query
 
     def _handle_3i(self, query):
-        raise NotImplementedError()
+        self._handle_atom(query.first_predicate_rule_1, query.first_constant_rule_1)
+        self._handle_atom(query.first_predicate_rule_2, query.first_constant_rule_2)
+        self._handle_atom(query.first_predicate_rule_3, query.first_constant_rule_3)
+        return query
+    
+    def _handle_ci(self, query):
+        self._handle_conjunction(query.first_predicate_rule_1, query.first_constant_rule_1, query.second_predicate_rule_1)
+        self._handle_atom(query.first_predicate_rule_2, query.first_constant_rule_2)
+        return query
         
-
-    def _handle_ip(self, query):
-        raise NotImplementedError()
-        
-
-    def _handle_pi(self, query):
-        raise NotImplementedError()
-        
+    def _handle_ic(self, query):
+        # same as ci
+        self._handle_ci(query)
+        return query
 
     def _handle_2u(self, query):
-        raise NotImplementedError()
-
+        # same as 2i
+        self._handle_2i(query)
+        return query
+    
     def _handle_up(self, query):
-        raise NotImplementedError()
+        # same as 2i
+        self._handle_2i(query)
+        return query
+    
 
-
-
-
-
-
-   
     def _add_probabilistic_facts_to_knowledge_base(self):
         for rule in self.rules:
             self.program.add_rule(rule)
-
-
 
 
     def _add_deterministic_facts_to_knowledge_base(self):

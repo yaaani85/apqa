@@ -5,6 +5,7 @@ import os
 from utils import get_name_to_entity_mappings, get_index_to_entity_mappings
 
 class Dataset():
+    # TODO Load Queries in DataLoader 
     def __init__(self, data_path):
         assert os.path.exists(data_path), "Please specify an existsing path to the Dataset"
 
@@ -12,32 +13,33 @@ class Dataset():
         self._name_to_entities, self._entitites_to_name = get_name_to_entity_mappings(data_path)
         self._data_directory = data_path
 
-        with open(f"{self._data_directory}/datalog/test_queries.txt", "r") as datalog_txt:
-            datalog_queries = [line.rstrip() for line in datalog_txt]
-            query_types = ["2p"] * len(datalog_queries)
-            self._datalog_queries =  zip(datalog_queries, query_types)
-    # 
+    # TODO to utils
+        try:
+            with open(f'{self.data_directory}/entity_idx.pickle', 'rb') as handle:
+                self._entity_dict = pickle.load(handle)
 
-        with open(f'{self._data_directory}/test_answers_fbk15.pickle', 'rb') as handle:
-            self._test_answers = pickle.load(handle)
+        except IOError:
+            self._entity_dict = None
 
-        with open(f'{self._data_directory}/test_answers_hard_fbk15.pickle', 'rb') as handle:
-            self._test_answers_hard = pickle.load(handle)
+        except Exception as e:
+            raise e
+    
+    @property
+    def name(self):
+        # change hardcode
+        return "FB15K-237"
 
-        with open(f'{self._data_directory}/test_queries_fbk15.pickle', 'rb') as handle:
-            self._queries = pickle.load(handle)
-
-
-        with open(f'{self._data_directory}/entity_idx.pickle', 'rb') as handle:
-            self._entity_dict = pickle.load(handle)
+    @property
+    def query_types(self):
+        return ['1_2','1_3','2_2','2_3','4_3','3_3','2_2_disj','4_3_disj']
 
     @property
     def entity_dict(self):
         return self._entity_dict
 
     @property
-    def datalog_queries(self):
-        return self._datalog_queries
+    def datalog_queries_path(self):
+        return self._data_directory + "/datalog"
     
     @property
     def queries(self):
@@ -79,3 +81,14 @@ class Dataset():
     @property
     def num_entities(self):
         return len(self._index_to_entities)
+    
+
+   
+    def get_query_path(self, query_type, query_id):
+        query_path = os.path.join(query_type, query_id)
+        query_path = os.path.join(self.datalog_queries_path, query_path)
+        query_path = os.path.join(query_path, "datalog.txt")
+        assert os.path.isfile(query_path), f"FILE NOT FOUND{query_path}"
+        return query_path
+    
+        
