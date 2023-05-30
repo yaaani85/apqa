@@ -2,6 +2,13 @@
 Probablistic Reasoning over large (incomplete) Knowledge Graphs
 
 
+
+## Run on Das 6 Instructions (DEV)
+* ENVIRONMENT: conda activate /var/scratch/ybk240/envs/pqa
+* CONFIG: change paths in default.ini
+* RUN: python src/main.py
+
+
 ## Research Ideas
 
 * Query Optimization (More advanced strategies then: top-k beam search or threshold)
