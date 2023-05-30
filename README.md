@@ -9,7 +9,7 @@ Probablistic Reasoning over large (incomplete) Knowledge Graphs
 * CONFIG: set run variables in default.ini
 * DAS:
   `module load prun; module load cuda11.1/toolkit (CHANGE)`
-* RUN: `python src/main.py`
+* RUN: `prun ./main.sh`
 
 
 ## Research Ideas
