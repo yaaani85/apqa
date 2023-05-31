@@ -10,7 +10,7 @@ import torch
 import numpy as np
 import torch.nn as nn
 from kge.model import KgeModel
-from kbc.learn import kbc_model_load
+# from kbc.learn import kbc_model_load
 import torch.nn.functional as F
 class EmbTopKEDBIterator(PyIterator):
     def __init__(self, data):
