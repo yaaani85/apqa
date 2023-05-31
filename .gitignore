@@ -2,6 +2,7 @@ build/
 data/
 glog/
 glog-python/
-kge/
-preprocessing/
+src/preprocessing/
+kbc/
+src/data_preprocessing/
 __pycache__/

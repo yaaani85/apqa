@@ -2,7 +2,7 @@ import os
 import pickle
 import pickle
 import os
-from utils import get_name_to_entity_mappings, get_index_to_entity_mappings
+from utils import  get_index_to_entity_mappings
 
 class Dataset():
     # TODO Load Queries in DataLoader 
@@ -10,19 +10,19 @@ class Dataset():
         assert os.path.exists(data_path), "Please specify an existsing path to the Dataset"
 
         self._index_to_entities, self._index_to_relation = get_index_to_entity_mappings(data_path)
-        self._name_to_entities, self._entitites_to_name = get_name_to_entity_mappings(data_path)
+        # self._name_to_entities, self._entitites_to_name = get_name_to_entity_mappings(data_path)
         self._data_directory = data_path
 
     # TODO to utils
-        try:
-            with open(f'{self.data_directory}/entity_idx.pickle', 'rb') as handle:
-                self._entity_dict = pickle.load(handle)
+        # try:
+        #     # with open(f'{self.data_directory}/entity_idx.pickle', 'rb') as handle:
+        #     #     self._entity_dict = pickle.load(handle)
 
-        except IOError:
-            self._entity_dict = None
+        # except IOError:
+        self._entity_dict = None
 
-        except Exception as e:
-            raise e
+        # except Exception as e:
+        #     raise e
     
     @property
     def name(self):
@@ -31,7 +31,8 @@ class Dataset():
 
     @property
     def query_types(self):
-        return ['1_2','1_3','2_2','2_3','4_3','3_3','2_2_disj','4_3_disj']
+        return ['1_2']
+        # return ['1_2','1_3','2_2','2_3','4_3','3_3','2_2_disj','4_3_disj']
 
     @property
     def entity_dict(self):
@@ -69,13 +70,13 @@ class Dataset():
     def data_directory(self):
         return self._data_directory
     
-    @property
-    def name_to_entities(self):
-        return self._name_to_entities
+    # @property
+    # def name_to_entities(self):
+    #     return self._name_to_entities
     
-    @property
-    def entities_to_name(self):
-        return self._entitites_to_name
+    # @property
+    # def entities_to_name(self):
+    #     return self._entitites_to_name
     
 
     @property

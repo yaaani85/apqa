@@ -5,7 +5,7 @@ import logging
 
 
 
-def evaluation(scores, answers):
+def evaluation(scores, answers, dataset):
     '''This function is written by Daniel Daza (CQD) '''
     queries, answers, answers_hard = answers
 
@@ -16,17 +16,34 @@ def evaluation(scores, answers):
 
     
     for query_id, query in enumerate(tqdm(queries)):
-    
+
+        
+
+        if query_id == 3:
+            break
+        anchor, rel1, x1, x2, rel2, x3 = query.split('_')
+        anchor = dataset.index_to_entities[int(anchor)]
+        rel1 = dataset.index_to_relation[int(rel1)]
+        rel2 = dataset.index_to_relation[int(rel2)]
+        # print(
+        #     f'Query {query_id}: ?Y:∃ X.({anchor}, {rel1}, X) and (X, {rel2}, Y)')
 
         score = scores[query_id]
+        # print(score.shape)
+        # print(score)
+  
         score -= (torch.min(score) - 1)
         ans = answers[query]
+        # print("Score", score)
         hard_ans = answers_hard[query]
+        # print("HARD ANS", hard_ans)
         all_idx = set(range(nentity))
 
         false_ans = all_idx - set(ans)
         ans_list = list(ans)
         hard_ans_list = list(hard_ans)
+        hard_ans_txt = [dataset.index_to_entities[int(i)] for i in hard_ans_list]
+        # print("hard ands txt", hard_ans_txt)
         false_ans_list = list(false_ans)
         ans_idxs = np.array(hard_ans_list)
         vals = np.zeros((len(ans_idxs), nentity))

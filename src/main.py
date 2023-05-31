@@ -12,9 +12,8 @@ def run(embedding_model_path, edb, top_k, dataset, rank_embedding_model):
         apqa = APQA(embedding_model_path, edb, k=top_k, dataset=dataset)
         scores = apqa.answer_queries(query_type)
         answers = get_answers(dataset.data_directory, query_type)
-        metrics = evaluation(scores, answers)
-        
-        with open(f'topk_d={dataset.name}_e={query_type}_rank={rank_embedding_model}_k={top_k}.json', 'w') as fp:
+        metrics = evaluation(scores, answers, dataset)
+        with open(f'topk_d={dataset.name}_e={query_type}_rank={rank_embedding_model}_k={top_k}.json', 'w+') as fp:
             json.dump(metrics, fp)
 
     # TODO add logger file results

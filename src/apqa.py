@@ -2,6 +2,8 @@ import glog
 import json
 from rule_parser import RuleParser
 from kge.model import KgeModel
+from kge.config import Config
+from kge.dataset import Dataset
 from kge.util.io import load_checkpoint
 from embtopk.embtopktable import EmbTopKEDBTable
 from wmc import WMC
@@ -18,6 +20,7 @@ class Query():
             # to parser
             self._query_type = query_type
             self._datalog_program, query, rule_1, rule_2, rule_3 = parse_program(datalog_file, query_type)
+            print("QUERY", query)
             self._qid = get_query_id_form_query(query)
             self._predicates_in_query, self._subjects_in_query = get_terms_from_body(query)
             self._predicates_in_rule_1, self._subjects_in_rule_1 = get_terms_from_body(rule_1)
@@ -129,8 +132,11 @@ class Engine():
             for fact in facts:
                 try:
                     name, prob = fact
-                    print(prob)
-                    results.append(name)                     
+                    print(name, prob)
+                    
+                    if float(prob) > 0.01: 
+                        results.append(name)
+                                         
                 except ValueError:
                     results.append(fact)
         
@@ -167,10 +173,17 @@ class Engine():
                         probabilities[fact] = probability
 
                     proof.append(fact)
+                    
                 answers[current_answer].append(proof)
                 variables_per_answer[current_answer].update(proof)
         return query.qid, (answers, variables_per_answer), probabilities
 
+
+def kbc_to_kge(kge_model_dict, kbc_model_dict):
+    kge_model_dict['model'][0]['_entity_embedder.embeddings.weight'] = kbc_model_dict['model_state_dict']["embeddings.0.weight"]
+    kge_model_dict['model'][1]['_relation_embedder.embeddings.weight'] = kbc_model_dict['model_state_dict']["embeddings.1.weight"]
+
+    return kge_model_dict
 
 
 class ApproximateProbabilisticQueryAnswerer():
@@ -188,7 +201,12 @@ class ApproximateProbabilisticQueryAnswerer():
         self._program = glog.Program(self._edb)
         self._rules = []
         self._k = k
-        self._embedding_model = KgeModel.create_from(load_checkpoint(embedding_model_path))
+        checkpoint = load_checkpoint(embedding_model_path)
+        # checkpoint_kbc = load_checkpoint("/home/yannick/phd/coding/cqd/models/FB15k-237-model-rank-500-epoch-100-1602506111.pt")
+        # checkpoint = kbc_to_kge(checkpoint_kge, checkpoint_kbc)
+      
+        self._embedding_model = KgeModel.create_from(checkpoint)
+        
         self._dataset = dataset
 
     @property
@@ -228,15 +246,21 @@ class ApproximateProbabilisticQueryAnswerer():
         final_scores = None
 
         os.chdir(self.dataset.datalog_queries_path)
+        query_list = os.listdir(query_type)
+        query_list.sort(key=lambda x: int(x))
 
-        for query_id in tqdm(os.listdir(query_type)):
+        for query_id in tqdm(query_list):
             query_path = self.dataset.get_query_path(query_type, query_id)
-           
+            if query_id == "3":
+                return final_scores
             try:
                 qid, answers, probabilities = self._answer_query(query_path, query_type)
                 qid = qid.replace("Q", "")
+                
                 wmc = solver.solve(answers, probabilities)
                 results[qid] = wmc
+                # print("wmc", wmc)
+
                 entity_indexes = [self.dataset.entities_to_index[entity.strip("<>")] for entity in wmc.keys()]
                 query_scores[entity_indexes] = torch.Tensor(list(wmc.values()))
                 final_scores = query_scores if final_scores is None else torch.column_stack([final_scores,query_scores])
@@ -299,8 +323,12 @@ class ApproximateProbabilisticQueryAnswerer():
     
 
     def _handle_conjunction(self, first_predicate, first_constant, second_predicate):
+        print("FP", first_predicate)
+        print("SP", first_constant)
+
         self._add_top_k_source(first_predicate, first_constant)
         intermediate_variable_assignments = self._collect_top_k_intermediate_variable_assignments(first_predicate, first_constant)
+        
         for possible_assignment in intermediate_variable_assignments:
             self._add_top_k_source(second_predicate, possible_assignment)
         

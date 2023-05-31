@@ -18,8 +18,13 @@ class WMC():
         ### Now used for quick inference, but botch WMC methods should be merged. (see WMCCalculator) ###
         wmc_per_answer = {}
         answers, variables_per_answer = answers
+
+        # for _, lineage in answers.items():
+        #     print("proof", lineage)
         try:
             for answer, lineage in answers.items():
+                # print("answer", answer)
+                # print("LEN LINEAGE", lineage)
                 if len(lineage) > 1:
                     number_of_variables = len(variables_per_answer[answer])
                     vtree = Vtree(var_count=number_of_variables, var_order=list(
@@ -64,10 +69,8 @@ class WMC():
                         fact = literalToTuple[literal.literal]
                         if not fact:
                             continue
-                            # weight = self.probs_pickle[np.asarray(fact_tuple).tobytes()]
                         try:
                             weight = probabilities[fact]
-                            # weight = self.probs[np.asarray(fact_tuple).tobytes()]
                         except KeyError:
                             
                             weight = 1.0
@@ -96,7 +99,7 @@ class WMC():
                     probability = math.exp(w)
 
                 else:
-                    probability = 1
+                    probability = 1.0
                     t_disjunct = lineage[0]
                     # lookup probs of fact pairs
                     fact = None
@@ -106,8 +109,8 @@ class WMC():
                         try:
                             weight = probabilities[fact]
                         except KeyError:
-
-                            weight = 1
+                            # print("KEY ERROR EXCEPTION")
+                            weight = 1.0
 
                         except Exception as e:
                             print("THE EX", e)
