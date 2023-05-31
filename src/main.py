@@ -16,6 +16,7 @@ def run(embedding_model_path, edb, top_k, dataset, rank_embedding_model):
         with open(f'topk_d={dataset.name}_e={query_type}_rank={rank_embedding_model}_k={top_k}.json', 'w+') as fp:
             json.dump(metrics, fp)
 
+        print("metrics:" metrics)
     # TODO add logger file results
 
 

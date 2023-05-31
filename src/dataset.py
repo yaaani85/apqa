@@ -14,15 +14,15 @@ class Dataset():
         self._data_directory = data_path
 
     # TODO to utils
-        # try:
-        #     # with open(f'{self.data_directory}/entity_idx.pickle', 'rb') as handle:
-        #     #     self._entity_dict = pickle.load(handle)
+        try:
+            with open(f'{self.data_directory}/entity_idx.pickle', 'rb') as handle:
+                self._entity_dict = pickle.load(handle)
 
-        # except IOError:
-        self._entity_dict = None
+        except IOError:
+            self._entity_dict = None
 
-        # except Exception as e:
-        #     raise e
+        except Exception as e:
+            raise e
     
     @property
     def name(self):
