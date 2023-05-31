@@ -1,11 +1,11 @@
 import glog
 import json
-from rule_parser import RuleParser
+from embedding.rule_parser import RuleParser
 from kge.model import KgeModel
 from kge.config import Config
 from kge.dataset import Dataset
 from kge.util.io import load_checkpoint
-from embtopk.embtopktable import EmbTopKEDBTable
+from embedding.embtopk.embtopktable import EmbTopKEDBTable
 from wmc import WMC
 from utils import  get_terms_from_body, parse_program, get_query_id_form_query
 import logging

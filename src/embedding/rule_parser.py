@@ -1,5 +1,5 @@
-from rule import Rule
-from literal import Literal
+from embedding.rule import Rule
+from embedding.literal import Literal
 
 class RuleParser:
     def __init__(self):
