@@ -1,17 +1,18 @@
 import pickle
 from rule_parser import RuleParser
+from pyterm import PyTerm
 
-# def get_name_to_entity_mappings(data_directory):
-#     name_to_entities = {}
-#     entitites_to_name = {}
+def get_name_to_entity_mappings(data_directory):
+    name_to_entities = {}
+    entitites_to_name = {}
 
-#     with open('/home/yannick/phd/coding/pqa/data/FB15k/entity2text.txt') as f:
-#         for line in f:
-#             fb_id, name = line.strip().split('\t')
-#             name_to_entities[name] = fb_id
-#             entitites_to_name[fb_id] = name
+    with open(f'{data_directory}/entity2text.txt') as f:
+        for line in f:
+            fb_id, name = line.strip().split('\t')
+            name_to_entities[name] = fb_id
+            entitites_to_name[fb_id] = name
 
-#     return name_to_entities, entitites_to_name
+    return name_to_entities, entitites_to_name
 
 
 def get_index_to_entity_mappings(data_directory):
@@ -39,6 +40,12 @@ def get_answers(data_directory, query_type):
     return (queries, test_answers, test_answers_hard)
 
 
+def get_py_format(subject):
+
+    s = PyTerm(is_var=False, value=subject, numerical_id=-1, is_null=False)
+    o = PyTerm(is_var=True, value=None, numerical_id=-1, is_null=False)
+    score = PyTerm(is_var=True, value=2,numerical_id=-1, is_null=False)
+    return (s, o, score)
 
 def parse_query(datalog_query):
     if not datalog_query:
@@ -111,3 +118,12 @@ def parse_program(program, query_type):
                 datalog_program.append(line.strip())
 
     return datalog_program, datalog_query, rule_1, rule_2, rule_3
+
+
+def print_proof(dataset, proof):
+    print("proof", proof)
+    for fact in proof:
+        print("s", dataset.entitites_to_name[fact[1].strip("<>")])
+        print("r", fact[0])
+        print("o", dataset.entitites_to_name[fact[2].strip("<>")])
+    print("\n\n")

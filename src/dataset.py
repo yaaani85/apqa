@@ -2,15 +2,15 @@ import os
 import pickle
 import pickle
 import os
-from utils import  get_index_to_entity_mappings
+from utils import  get_index_to_entity_mappings, get_name_to_entity_mappings
 
 class Dataset():
-    # TODO Load Queries in DataLoader 
+    # TODO Load Queries in DataLoader, merge with Dataset class from libkge (now to dataset classes)
     def __init__(self, data_path):
         assert os.path.exists(data_path), "Please specify an existsing path to the Dataset"
 
         self._index_to_entities, self._index_to_relation = get_index_to_entity_mappings(data_path)
-        # self._name_to_entities, self._entitites_to_name = get_name_to_entity_mappings(data_path)
+        self.name_to_entities, self.entitites_to_name = get_name_to_entity_mappings(data_path)
         self._data_directory = data_path
 
     # TODO to utils
@@ -23,7 +23,8 @@ class Dataset():
 
         except Exception as e:
             raise e
-    
+
+
     @property
     def name(self):
         # change hardcode
@@ -31,8 +32,7 @@ class Dataset():
 
     @property
     def query_types(self):
-        return ['1_2']
-        # return ['1_2','1_3','2_2','2_3','4_3','3_3','2_2_disj','4_3_disj']
+        return ['1_2','1_3','2_2','2_3','4_3','3_3','2_2_disj','4_3_disj']
 
     @property
     def entity_dict(self):
@@ -69,15 +69,6 @@ class Dataset():
     @property
     def data_directory(self):
         return self._data_directory
-    
-    # @property
-    # def name_to_entities(self):
-    #     return self._name_to_entities
-    
-    # @property
-    # def entities_to_name(self):
-    #     return self._entitites_to_name
-    
 
     @property
     def num_entities(self):

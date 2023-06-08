@@ -13,7 +13,10 @@ class LearningSetting(object):
         self.embedding_model_path = parser.get('EMBEDDING_MODEL', 'embedding_model_path')
         self.edb_config_path = parser.get('EDB', 'edb_config_path')
         self.top_k = parser.get("TOPK", 'top_k')
+        self.threshold = parser.get("THRESHOLD", 'threshold')
+
         self.rank = parser.get("RANK", 'rank')
+        self.max_queries = parser.get("MAX_QUERIES", "max_queries")
 
 
 

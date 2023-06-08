@@ -17,14 +17,14 @@ class WMC():
         '''Simple off the shelve WMC solver, this method has/stores no WMC semiring '''
         ### Now used for quick inference, but botch WMC methods should be merged. (see WMCCalculator) ###
         wmc_per_answer = {}
-        answers, variables_per_answer = answers
-
-        # for _, lineage in answers.items():
-        #     print("proof", lineage)
+        answers, variables_per_answer, contains_deteremnistic_answer = answers
         try:
             for answer, lineage in answers.items():
-                # print("answer", answer)
-                # print("LEN LINEAGE", lineage)
+
+                if any(contains_deteremnistic_answer[answer]):
+                    wmc_per_answer[answer] = 1.0
+                    continue
+
                 if len(lineage) > 1:
                     number_of_variables = len(variables_per_answer[answer])
                     vtree = Vtree(var_count=number_of_variables, var_order=list(
@@ -72,7 +72,7 @@ class WMC():
                         try:
                             weight = probabilities[fact]
                         except KeyError:
-                            
+                            # print("Key error", fact)
                             weight = 1.0
 
                         try:
