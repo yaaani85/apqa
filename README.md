@@ -6,10 +6,11 @@ Probablistic Reasoning over large (incomplete) Knowledge Graphs
 ## Run on Das 6 Instructions (DEV)
 * ENVIRONMENT:
     `conda activate /var/scratch/ybk240/envs/pqa`
-* CONFIG: set run variables in default.ini
+* CONFIG: check run variables in default.ini
 * DAS:
-  `module load prun; module load cuda11.1/toolkit (CHANGE)`
-* RUN: `prun ./main.sh`
+  `module load prun`
+  `chmod +x ./main.sh`
+* RUN: `prun -np 1 -t 00:15:00 ./main.sh`
 
 
 ## Research Ideas
